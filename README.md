@@ -9,6 +9,8 @@ Within the UniFi controller you can create an alias for devices as they appear o
 
 Place script on PiHole server, in my case this is in /home/pi. You will also need to ensure you have the relevant python libraries installed. 
 
+Note: I am using an adjusted hosts.py file to enable support for spaces instead of tabs in the host file creation - you will need to replace the hosts.py file created by python_hosts with the one here. See below for instructions.
+
 ```
 sudo pip install python_hosts
 sudo pip install pyunifi
@@ -37,6 +39,30 @@ Add the following lines to the cron file and save/exit
 
 0,15,30,45 * * * * /home/pi/client-mapping.py -c [Controller IP] -u [Controller username] -p [Controller password]
 ```
+=====
+
+hosts.py
+
+To replace this, please copy this new version to /usr/local/lib/python2.7/dist-packages/python_hosts - make a backup of the original to be safe. Also you will need to do this again if you ever update python_hosts
+
+The text changed is:
+```                 if line.entry_type == 'ipv4':
+                        hosts_file.write(
+                            "{0} {1}\n".format(
+                                line.address,
+                                ' '.join(line.names),
+                            )
+                        )
+                        ipv4_entries_written += 1
+                    if line.entry_type == 'ipv6':
+                        hosts_file.write(
+                            "{0} {1}\n".format(
+                                line.address,
+                                ' '.join(line.names), ))
+                        ipv6_entries_written += 1
+```
+=====
+
 
 
 Finally, ensure you have selected "Reverse DNS lookup" for "Top Clients" within Settings on the PiHole Server 
