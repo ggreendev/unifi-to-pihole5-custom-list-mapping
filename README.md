@@ -1,4 +1,6 @@
-### unifi-to-hosts-mapping
+### unifi-to-hosts-mapping - beta
+
+This version currently fails - please use Master Branch
 
 Note: Updated to support pyunifi library as unifi library is unsupported.
 
