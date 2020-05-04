@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+# Updated to support pyunifi library
+
 import argparse, string, os, sys
 from netaddr import *
-from unifi.controller import Controller
+from pyunifi.controller import Controller
 from python_hosts import Hosts, HostsEntry
 
 parser = argparse.ArgumentParser(description = "Fetch list of hosts from unifi controller and place them in a hosts file")
@@ -15,6 +17,7 @@ parser.add_argument('-f', '--hostfile', help = "hosts file to use", default = "/
 parser.add_argument('-c', '--controller', help = "controller IP or hostname")
 parser.add_argument('-u', '--user', help = "username")
 parser.add_argument('-p', '--password', help = "password")
+parser.add_argument('-s', '--sslCert', help = "SSL CertPath True or False", default = "False")
 args = parser.parse_args()
 
 if args.verbose:
@@ -44,8 +47,15 @@ else:
     password = os.getenv("UNIFI_PASSWORD")
     if password is None:
         password = raw_input('Password: ')
+        
+if args.sslcert is not None:
+    sslCert = args.sslcert
+else:
+    sslCert = os.getenv("SSL_CERT_VAR")
+    if sslCert is None:
+        sslCert = raw_input('SSL_Var: ')
 
-c = Controller(controllerIP, userName, password, "8443", "v4", "default")
+c = Controller(controllerIP, userName, password, "8443", "v4", "default", sslCert)
 clients = c.get_clients()
 list = {}
 
@@ -57,8 +67,8 @@ for client in clients:
     ip = client.get('ip', 'Unknown')
     hostname = client.get('hostname')
     name = client.get('name', hostname)
-    if not args.mixedcase:
-        name = name.lower()
+#    if not args.mixedcase:
+#        name = name.lower()
     mac = client['mac']
 
     if ip <> "Unknown":
