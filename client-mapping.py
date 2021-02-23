@@ -4,14 +4,16 @@
 
 import argparse, string, os, sys
 from netaddr import *
-from pyunifi.controller import Controller
-from python_hosts import Hosts, HostsEntry
+from unifi_controller_ext import ControllerExt
+from python_hosts import HostsEntry
+from pihole_hosts import PiHoleHosts
 
 parser = argparse.ArgumentParser(description = "Fetch list of hosts from unifi controller and place them in a hosts file")
 parser.add_argument('-v', '--verbose', action='store_true', help = "print additional information")
 
 parser.add_argument('-nh', '--nohosts', action='store_true', help = "don't attempt to write to hosts file")
 parser.add_argument('-m', '--mixedcase', action='store_true', help = "do not force all names to lower case")
+parser.add_argument('-d', '--domains', action='store_true', help='adds domain name from unifi network if exists')
 
 parser.add_argument('-f', '--hostfile', help = "hosts file to use", default = "/etc/pihole/custom.list")
 parser.add_argument('-c', '--controller', help = "controller IP or hostname")
@@ -47,26 +49,43 @@ else:
     if password is None:
         password = raw_input('Password: ')
 
-c = Controller(controllerIP, userName, password, "8443", "v4", "default", ssl_verify=False)
+c = ControllerExt(controllerIP, userName, password, "8443", "v4", "default", ssl_verify=False)
 clients = c.get_clients()
+useDomains = args.domains
+if not useDomains:
+    useDomains = os.getenv("USE_UNIFI_DOMAINS") <> None
+
+if useDomains:
+    domains = c.get_network_domains()
+else:
+    domains = dict()
+
 list = {}
 
 if args.verbose:
     print "Using hosts file %s" % args.hostfile
-hosts = Hosts(path=args.hostfile)
+hosts = PiHoleHosts(path=args.hostfile)
 
 for client in clients:
     ip = client.get('ip', 'Unknown')
     hostname = client.get('hostname')
     name = client.get('name', hostname)
-    if not args.mixedcase:
+    if name:
+        name = unicode.strip(name)
+    if not args.mixedcase and name <> None:
         name = name.lower()
+    network_id = client['network_id']
+    domain = domains.get(network_id)
+    if domain:
+        unicode.strip(domain)
+    if domain and name:
+        name = name + '.' + domain
     mac = client['mac']
 
     if ip <> "Unknown":
         ip = IPAddress(ip)
 
-    if ip <> "Unknown" and name <> None:
+    if ip <> "Unknown" and name:
         name = name.replace(" ", "")
         list[ip] = name
         sorted(list)
